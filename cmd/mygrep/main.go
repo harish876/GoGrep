@@ -37,7 +37,10 @@ func matchLine(line []byte, pattern string) (bool, error) {
 	var ok bool
 	switch pattern {
 	case `\d`:
-		ok = containsDigit(line)
+		ok = matchDigit(line)
+		return ok, nil
+	case `\w`:
+		ok = matchDigitOrChar(line)
 		return ok, nil
 	default:
 		ok = bytes.ContainsAny(line, pattern)
@@ -46,7 +49,7 @@ func matchLine(line []byte, pattern string) (bool, error) {
 
 }
 
-func containsDigit(line []byte) bool {
+func matchDigit(line []byte) bool {
 	for _, char := range line {
 		if isDigit(char) {
 			return true
@@ -55,6 +58,28 @@ func containsDigit(line []byte) bool {
 	return false
 }
 
+func matchChar(line []byte) bool {
+	for _, char := range line {
+		if isAlpha(char) {
+			return true
+		}
+	}
+	return false
+}
+
+func matchDigitOrChar(line []byte) bool {
+	for _, char := range line {
+		if isAlpha(char) || isDigit(char) {
+			return true
+		}
+	}
+	return false
+}
+
 func isDigit(char byte) bool {
 	return char >= '0' && char <= '9'
+}
+
+func isAlpha(char byte) bool {
+	return (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z')
 }
