@@ -35,18 +35,24 @@ func main() {
 
 func matchLine(line []byte, pattern string) (bool, error) {
 	var ok bool
-	switch pattern {
-	case `\d`:
+	switch {
+	case pattern == `\d`:
 		ok = matchDigit(line)
 		return ok, nil
-	case `\w`:
+	case pattern == `\w`:
 		ok = matchDigitOrChar(line)
+		return ok, nil
+	case len(pattern) >= 2 && pattern[0] == '[' && pattern[len(pattern)-1] == ']':
+		charsToMatch := make(map[byte]bool, 0)
+		for i := 1; i < len(pattern); i++ {
+			charsToMatch[pattern[i]] = true
+		}
+		ok = matchCharSet(line, charsToMatch)
 		return ok, nil
 	default:
 		ok = bytes.ContainsAny(line, pattern)
 		return ok, nil
 	}
-
 }
 
 func matchDigit(line []byte) bool {
@@ -70,6 +76,15 @@ func matchChar(line []byte) bool {
 func matchDigitOrChar(line []byte) bool {
 	for _, char := range line {
 		if isAlpha(char) || isDigit(char) {
+			return true
+		}
+	}
+	return false
+}
+
+func matchCharSet(line []byte, charSet map[byte]bool) bool {
+	for _, char := range line {
+		if _, ok := charSet[char]; ok {
 			return true
 		}
 	}
