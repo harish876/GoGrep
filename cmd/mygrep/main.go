@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"unicode/utf8"
 )
 
 // Usage: echo <input_text> | your_program.sh -E <pattern>
@@ -32,20 +31,30 @@ func main() {
 	if !ok {
 		os.Exit(1)
 	}
-
-	// default exit code is 0 which means success
 }
 
 func matchLine(line []byte, pattern string) (bool, error) {
-	if utf8.RuneCountInString(pattern) != 1 {
-		return false, fmt.Errorf("unsupported pattern: %q", pattern)
+	var ok bool
+	switch pattern {
+	case `\d`:
+		ok = containsDigit(line)
+		return ok, nil
+	default:
+		ok = bytes.ContainsAny(line, pattern)
+		return ok, nil
 	}
 
-	var ok bool
+}
 
-	fmt.Println("Logs from your program will appear here!")
+func containsDigit(line []byte) bool {
+	for _, char := range line {
+		if isDigit(char) {
+			return true
+		}
+	}
+	return false
+}
 
-	ok = bytes.ContainsAny(line, pattern)
-
-	return ok, nil
+func isDigit(char byte) bool {
+	return char >= '0' && char <= '9'
 }
