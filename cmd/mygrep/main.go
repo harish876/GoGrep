@@ -38,21 +38,18 @@ func matchLine(line []byte, pattern string) (bool, error) {
 	switch {
 	case pattern == `\d`:
 		ok = matchDigit(line)
-		return ok, nil
 	case pattern == `\w`:
 		ok = matchDigitOrChar(line)
-		return ok, nil
-	case len(pattern) >= 2 && pattern[0] == '[' && pattern[len(pattern)-1] == ']':
-		charsToMatch := make(map[byte]bool, 0)
-		for i := 1; i < len(pattern); i++ {
-			charsToMatch[pattern[i]] = true
-		}
-		ok = matchCharSet(line, charsToMatch)
-		return ok, nil
+	case isPositiveCharGroup(pattern):
+		ok = matchCharSet(line, pattern)
+	case isNegativeCharGroup(pattern):
+		ok = matchNoneInCharSet(line, pattern)
 	default:
 		ok = bytes.ContainsAny(line, pattern)
-		return ok, nil
 	}
+
+	return ok, nil
+
 }
 
 func matchDigit(line []byte) bool {
@@ -82,19 +79,53 @@ func matchDigitOrChar(line []byte) bool {
 	return false
 }
 
-func matchCharSet(line []byte, charSet map[byte]bool) bool {
+// any
+func matchCharSet(line []byte, pattern string) bool {
+	charsToMatch := make(map[byte]bool, 0)
+	for i := 1; i < len(pattern); i++ {
+		charsToMatch[pattern[i]] = true
+	}
 	for _, char := range line {
-		if _, ok := charSet[char]; ok {
+		if _, ok := charsToMatch[char]; ok {
 			return true
 		}
 	}
 	return false
 }
 
+// none
+func matchNoneInCharSet(line []byte, pattern string) bool {
+	charsToMatch := make(map[byte]bool, 0)
+	for i := 1; i < len(pattern); i++ {
+		charsToMatch[pattern[i]] = true
+	}
+	for _, char := range line {
+		if _, ok := charsToMatch[char]; ok {
+			return false
+		}
+	}
+	return true
+}
 func isDigit(char byte) bool {
 	return char >= '0' && char <= '9'
 }
 
 func isAlpha(char byte) bool {
 	return (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z')
+}
+
+func isPositiveCharGroup(pattern string) bool {
+	n := len(pattern)
+	if n < 2 {
+		return false
+	}
+	return pattern[0] == '[' && pattern[n-1] == ']' && pattern[1] != '^'
+}
+
+func isNegativeCharGroup(pattern string) bool {
+	n := len(pattern)
+	if n < 2 {
+		return false
+	}
+	return pattern[0] == '[' && pattern[n-1] == ']' && pattern[1] == '^'
 }
