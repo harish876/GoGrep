@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
+
+	"github.com/codecrafters-io/grep-starter-go/cmd/lib"
 )
 
 // Usage: echo <input_text> | your_program.sh -E <pattern>
@@ -22,7 +25,15 @@ func main() {
 		os.Exit(2)
 	}
 
-	ok, err := matchLine(line, pattern)
+	slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}))
+
+	text := lib.NewIterator(line)
+	regexp := lib.NewIterator(pattern)
+
+	/*ok, err := match(line, pattern)*/
+	ok, err := lib.Match(text, regexp)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(2)
@@ -33,23 +44,21 @@ func main() {
 	}
 }
 
-func matchLine(line []byte, pattern string) (bool, error) {
+func match(text []byte, regexp string) (bool, error) {
 	var ok bool
 	switch {
-	case pattern == `\d`:
-		ok = matchDigit(line)
-	case pattern == `\w`:
-		ok = matchDigitOrChar(line)
-	case isPositiveCharGroup(pattern):
-		ok = matchCharSet(line, pattern)
-	case isNegativeCharGroup(pattern):
-		ok = matchNoneInCharSet(line, pattern)
+	case regexp == `\d`:
+		ok = matchDigit(text)
+	case regexp == `\w`:
+		ok = matchDigitOrChar(text)
+	case isPositiveCharGroup(regexp):
+		ok = matchCharSet(text, regexp)
+	case isNegativeCharGroup(regexp):
+		ok = matchNoneInCharSet(text, regexp)
 	default:
-		ok = bytes.ContainsAny(line, pattern)
+		ok = bytes.ContainsAny(text, regexp)
 	}
-
 	return ok, nil
-
 }
 
 func matchDigit(line []byte) bool {
