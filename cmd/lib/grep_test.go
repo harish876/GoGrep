@@ -133,11 +133,11 @@ func TestLastAnchor(t *testing.T) {
 	text := NewIterator("dog")
 
 	result, _ := Match(text, regexp)
-	Assert(t, result, "Matching string anchor dog$ with dog")
+	Assert(t, result, "Matching string  dog$ with dog")
 	regexp.Reset()
 	text = NewIterator("dogs")
 	result, _ = Match(text, regexp)
-	Assert(t, !result, "Matching string anchor dog$ with dogs")
+	Assert(t, !result, "Matching string  dog$ with dogs")
 }
 
 func TestQuestion(t *testing.T) {
@@ -145,16 +145,30 @@ func TestQuestion(t *testing.T) {
 	text := NewIterator("dog")
 
 	result, _ := Match(text, regexp)
-	Assert(t, result, "Matching string anchor dog? with dog")
+	Assert(t, result, "Matching string  dog? with dog")
 
 	regexp.Reset()
 	text = NewIterator("dogs")
 	result, _ = Match(text, regexp)
-	Assert(t, result, "Matching string anchor dog? with dogs")
+	Assert(t, result, "Matching string dog? with dogs")
 
 	regexp.Reset()
 	text = NewIterator("cat")
 	result, _ = Match(text, regexp)
-	Assert(t, !result, "Matching string anchor dog? with cat")
+	Assert(t, !result, "Matching string dog? with cat")
+
+}
+
+func TestAlt(t *testing.T) {
+	regexp := NewIterator("(cat|dog)")
+	text := NewIterator("cat")
+
+	result, _ := Match(text, regexp)
+	Assert(t, result, "Matching string cat with (cat|dog)")
+
+	regexp.Reset()
+	text = NewIterator("dog")
+	result, _ = Match(text, regexp)
+	Assert(t, result, "Matching string dog with (cat|dog)")
 
 }
