@@ -21,8 +21,8 @@ func MatchHere(text *ByteIterator, regexp *ByteIterator) bool {
 	if regexp.Get(1) == '*' {
 		return MatchStar(regexp.Get(0), text, regexp.Advance(2))
 	}
-	if regexp.Len() == 1 && regexp.Get(0) == '$' {
-		return text.Peek() == BUF_OUT_OF_RANGE
+	if regexp.Peek() == '$' {
+		return !text.HasNext()
 	}
 	if text.HasNext() && (regexp.Peek() == '.' || regexp.Peek() == text.Peek()) {
 		return MatchHere(text.Next(), regexp.Next())

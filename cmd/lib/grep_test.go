@@ -120,3 +120,16 @@ func TestAnchor(t *testing.T) {
 	result, _ = Match(text, regexp)
 	Assert(t, !result, "Matching string anchor ^log with slogger")
 }
+
+func TestLastAnchor(t *testing.T) {
+	regexp := NewIterator("dog$")
+	text := NewIterator("dog")
+
+	result, _ := Match(text, regexp)
+	Assert(t, result, "Matching string anchor dog$ with dog")
+	regexp.Reset()
+	text = NewIterator("dogs")
+	result, _ = Match(text, regexp)
+	Assert(t, !result, "Matching string anchor dog$ with dogs")
+
+}
