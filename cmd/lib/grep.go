@@ -20,29 +20,34 @@ func MatchHere(text *ByteIterator, regexp *ByteIterator) bool {
 	}
 	if regexp.Peek(1) == '*' {
 		return MatchStar(regexp.Peek(), text, regexp.Advance(2))
-	}
-	if regexp.Peek(1) == '+' {
+	} else if regexp.Peek(1) == '+' {
 		return MatchPlus(regexp.Peek(), text, regexp.Advance(2))
-	}
-	if regexp.Peek() == '$' {
+	} else if regexp.Peek(1) == '?' {
+		return MatchQuestion(regexp.Peek(), text, regexp.Advance(2))
+	} else if regexp.Peek() == '$' {
 		return !text.HasNext()
-	}
-	if text.HasNext() && (regexp.Peek() == '.' || regexp.Peek() == text.Peek()) {
+	} else if text.HasNext() && (regexp.Peek() == '.' || regexp.Peek() == text.Peek()) {
 		return MatchHere(text.Next(), regexp.Next())
-	}
-	if text.HasNext() && (regexp.Peek() == 0x5c && regexp.Peek(1) == 'd') {
+	} else if text.HasNext() && (regexp.Peek() == 0x5c && regexp.Peek(1) == 'd') {
 		return MatchDigit(text, regexp)
-	}
-	if text.HasNext() && (regexp.Peek() == 0x5c && regexp.Peek(1) == 'w') {
+	} else if text.HasNext() && (regexp.Peek() == 0x5c && regexp.Peek(1) == 'w') {
 		return MatchAlphaNumeric(text, regexp)
-	}
-	if text.HasNext() && (regexp.Peek() == '[' && regexp.End() == ']' && regexp.Peek(1) != '^') {
+	} else if text.HasNext() && (regexp.Peek() == '[' && regexp.End() == ']' && regexp.Peek(1) != '^') {
 		return MatchPositiveGroup(text, regexp.Next())
-	}
-	if text.HasNext() && (regexp.Peek() == '[' && regexp.End() == ']' && regexp.Peek(1) == '^') {
+	} else if text.HasNext() && (regexp.Peek() == '[' && regexp.End() == ']' && regexp.Peek(1) == '^') {
 		return MatchNegativeGroup(text, regexp.Next())
 	}
 	return false
+}
+
+func MatchQuestion(char byte, text *ByteIterator, regexp *ByteIterator) bool {
+	if MatchHere(text, regexp) {
+		return true
+	}
+	if text.HasNext() || (text.Peek() != '.' && text.Peek() != char) {
+		return false
+	}
+	return true
 }
 
 func MatchPositiveGroup(text *ByteIterator, regexp *ByteIterator) bool {
