@@ -18,8 +18,11 @@ func MatchHere(text *ByteIterator, regexp *ByteIterator) bool {
 	if !regexp.HasNext() {
 		return true
 	}
-	if regexp.Get(1) == '*' {
-		return MatchStar(regexp.Get(0), text, regexp.Advance(2))
+	if regexp.Peek(1) == '*' {
+		return MatchStar(regexp.Peek(), text, regexp.Advance(2))
+	}
+	if regexp.Peek(1) == '+' {
+		return MatchPlus(regexp.Peek(), text, regexp.Advance(2))
 	}
 	if regexp.Peek() == '$' {
 		return !text.HasNext()
@@ -96,7 +99,18 @@ func MatchStar(char byte, text *ByteIterator, regexp *ByteIterator) bool {
 		if !text.HasNext() || (text.Peek() != '.' && text.Peek() != char) {
 			return false
 		}
-
 		text.Next()
+	}
+}
+
+func MatchPlus(char byte, text *ByteIterator, regexp *ByteIterator) bool {
+	for {
+		if !text.HasNext() || (text.Peek() != '.' && text.Peek() != char) {
+			return false
+		}
+		text.Next()
+		if MatchHere(text, regexp) {
+			return true
+		}
 	}
 }

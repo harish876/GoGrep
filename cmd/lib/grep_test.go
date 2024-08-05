@@ -1,7 +1,6 @@
 package lib
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -105,7 +104,15 @@ func TestMatchStar(t *testing.T) {
 	text := NewIterator("racer")
 
 	result, _ := Match(text, regexp)
-	fmt.Println(result)
+	Assert(t, result)
+}
+
+func TestMatchPlus(t *testing.T) {
+	regexp := NewIterator("ca+t")
+	text := NewIterator("caaat")
+
+	result, _ := Match(text, regexp)
+	Assert(t, result)
 }
 
 func TestAnchor(t *testing.T) {
