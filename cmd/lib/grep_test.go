@@ -91,10 +91,32 @@ func TestCombinationGroup1(t *testing.T) {
 	Assert(t, result, "Matching Combinations Group '\\d apple' in 'sally has 3 apples'")
 }
 
+// TODO: how this working
+func TestCombinationGroup2(t *testing.T) {
+	regexp := NewIterator(`\d apple`)
+	text := NewIterator("sally has 300 apple")
+
+	result, _ := Match(text, regexp)
+	Assert(t, result, "Matching Combinations Group '\\d apple' in 'sally has 300 ap'")
+}
+
 func TestMatchStar(t *testing.T) {
 	regexp := NewIterator("c*")
 	text := NewIterator("racer")
 
 	result, _ := Match(text, regexp)
 	fmt.Println(result)
+}
+
+func TestAnchor(t *testing.T) {
+	regexp := NewIterator("^log")
+	text := NewIterator("logger")
+
+	result, _ := Match(text, regexp)
+	Assert(t, result, "Matching string anchor ^log with logger")
+
+	regexp.Reset()
+	text = NewIterator("slogger")
+	result, _ = Match(text, regexp)
+	Assert(t, !result, "Matching string anchor ^log with slogger")
 }

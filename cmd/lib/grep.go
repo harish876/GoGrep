@@ -1,8 +1,8 @@
 package lib
 
 func Match(text *ByteIterator, regexp *ByteIterator) (bool, error) {
-	if !regexp.HasNext() {
-		return true, nil
+	if regexp.Get(0) == '^' {
+		return MatchHere(text, regexp.Next()), nil
 	}
 	for {
 		if MatchHere(text, regexp) {
