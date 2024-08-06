@@ -6,7 +6,7 @@ import (
 
 func TestIter(t *testing.T) {
 	str := "harish_gokul"
-	it := NewIterator(str)
+	it := NewByteIterator(str)
 
 	Assert(t, it.Get(19) == BUF_OUT_OF_RANGE)
 	Assert(t, it.Get(0) == 'h')

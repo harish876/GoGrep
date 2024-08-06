@@ -5,86 +5,86 @@ import (
 )
 
 func TestMatchLiteral(t *testing.T) {
-	regexp := NewIterator("a")
-	text := NewIterator("apple")
+	regexp := NewByteIterator("a")
+	text := NewByteIterator("apple")
 
 	result, _ := Match(text, regexp)
 	Assert(t, result, "Matching a Literal. 'a' in 'apple'")
 
 	regexp.Reset()
-	text = NewIterator("dog")
+	text = NewByteIterator("dog")
 
 	result, _ = Match(text, regexp)
 	Assert(t, !result, "Matching a Literal. 'a' in 'dog'")
 }
 
 func TestMatchDigit(t *testing.T) {
-	regexp := NewIterator(`\d`)
-	text := NewIterator("apple 123")
+	regexp := NewByteIterator(`\d`)
+	text := NewByteIterator("apple 123")
 
 	result, _ := Match(text, regexp)
 	Assert(t, result, "Matching a Number. 1 in 'apple123'")
 
 	regexp.Reset()
-	text = NewIterator("dog")
+	text = NewByteIterator("dog")
 
 	result, _ = Match(text, regexp)
 	Assert(t, !result, "Matching a Number. No Number in 'dog'")
 }
 
 func TestMatchAlphaNumeric(t *testing.T) {
-	regexp := NewIterator(`\w`)
-	text := NewIterator("alpha-num3ric")
+	regexp := NewByteIterator(`\w`)
+	text := NewByteIterator("alpha-num3ric")
 
 	result, _ := Match(text, regexp)
 	Assert(t, result, "Matching a AlphaNumber. 1 in 'alpha-num3ric'")
 
 	regexp.Reset()
-	text = NewIterator("$!?")
+	text = NewByteIterator("$!?")
 
 	result, _ = Match(text, regexp)
 	Assert(t, !result, "Matching a Number. No Number in '$!?'")
 }
 
 func TestPositiveGroup(t *testing.T) {
-	regexp := NewIterator(`[abc]`)
-	text := NewIterator("apple")
+	regexp := NewByteIterator(`[abc]`)
+	text := NewByteIterator("apple")
 
 	result, _ := Match(text, regexp)
 	Assert(t, result, "Matching Positive Group [abc] in 'apple'")
 
 	regexp.Reset()
-	text = NewIterator("dog")
+	text = NewByteIterator("dog")
 
 	result, _ = Match(text, regexp)
 	Assert(t, !result, "Matching Positive Group. [abc] in 'dog'")
 }
 
 func TestNegativeGroup(t *testing.T) {
-	regexp := NewIterator(`[^abc]`)
-	text := NewIterator("dog")
+	regexp := NewByteIterator(`[^abc]`)
+	text := NewByteIterator("dog")
 
 	result, _ := Match(text, regexp)
 	Assert(t, result, "Matching Negative Group [abc] in 'dog'")
 
 	regexp.Reset()
-	text = NewIterator("cab")
+	text = NewByteIterator("cab")
 
 	result, _ = Match(text, regexp)
 	Assert(t, !result, "Matching Negative Group. [abc] in 'cab'")
 }
 
 func TestCombinationGroup(t *testing.T) {
-	regexp := NewIterator(`\d\d\d apple`)
-	text := NewIterator("123 apples")
+	regexp := NewByteIterator(`\d\d\d apple`)
+	text := NewByteIterator("123 apples")
 
 	result, _ := Match(text, regexp)
 	Assert(t, result, "Matching Combinations Group '\\d\\d\\d apple' in '123 apples'")
 }
 
 func TestCombinationGroup1(t *testing.T) {
-	regexp := NewIterator(`\d apple`)
-	text := NewIterator("sally has 3 apples")
+	regexp := NewByteIterator(`\d apple`)
+	text := NewByteIterator("sally has 3 apples")
 
 	result, _ := Match(text, regexp)
 	Assert(t, result, "Matching Combinations Group '\\d apple' in 'sally has 3 apples'")
@@ -92,83 +92,90 @@ func TestCombinationGroup1(t *testing.T) {
 
 // TODO: how this working
 func TestCombinationGroup2(t *testing.T) {
-	regexp := NewIterator(`\d apple`)
-	text := NewIterator("sally has 300 apple")
+	regexp := NewByteIterator(`\d apple`)
+	text := NewByteIterator("sally has 300 apple")
 
 	result, _ := Match(text, regexp)
 	Assert(t, result, "Matching Combinations Group '\\d apple' in 'sally has 300 ap'")
 }
 
 func TestMatchStar(t *testing.T) {
-	regexp := NewIterator("c*")
-	text := NewIterator("racer")
+	regexp := NewByteIterator("c*")
+	text := NewByteIterator("racer")
 
 	result, _ := Match(text, regexp)
 	Assert(t, result)
 }
 
 func TestMatchPlus(t *testing.T) {
-	regexp := NewIterator("ca+t")
-	text := NewIterator("caaat")
+	regexp := NewByteIterator("ca+t")
+	text := NewByteIterator("caaat")
 
 	result, _ := Match(text, regexp)
 	Assert(t, result)
 }
 
 func TestAnchor(t *testing.T) {
-	regexp := NewIterator("^log")
-	text := NewIterator("logger")
+	regexp := NewByteIterator("^log")
+	text := NewByteIterator("logger")
 
 	result, _ := Match(text, regexp)
 	Assert(t, result, "Matching string anchor ^log with logger")
 
 	regexp.Reset()
-	text = NewIterator("slogger")
+	text = NewByteIterator("slogger")
 	result, _ = Match(text, regexp)
 	Assert(t, !result, "Matching string anchor ^log with slogger")
 }
 
 func TestLastAnchor(t *testing.T) {
-	regexp := NewIterator("dog$")
-	text := NewIterator("dog")
+	regexp := NewByteIterator("dog$")
+	text := NewByteIterator("dog")
 
 	result, _ := Match(text, regexp)
 	Assert(t, result, "Matching string  dog$ with dog")
 	regexp.Reset()
-	text = NewIterator("dogs")
+	text = NewByteIterator("dogs")
 	result, _ = Match(text, regexp)
 	Assert(t, !result, "Matching string  dog$ with dogs")
 }
 
 func TestQuestion(t *testing.T) {
-	regexp := NewIterator("dogs?")
-	text := NewIterator("dog")
+	regexp := NewByteIterator("dogs?")
+	text := NewByteIterator("dog")
 
 	result, _ := Match(text, regexp)
 	Assert(t, result, "Matching string  dog? with dog")
 
 	regexp.Reset()
-	text = NewIterator("dogs")
+	text = NewByteIterator("dogs")
 	result, _ = Match(text, regexp)
 	Assert(t, result, "Matching string dog? with dogs")
 
 	regexp.Reset()
-	text = NewIterator("cat")
+	text = NewByteIterator("cat")
 	result, _ = Match(text, regexp)
 	Assert(t, !result, "Matching string dog? with cat")
 
 }
 
 func TestAlt(t *testing.T) {
-	regexp := NewIterator("(cat|dog)")
-	text := NewIterator("cat")
+	regexp := NewByteIterator("(cat|dog)")
+	text := NewByteIterator("cat")
 
 	result, _ := Match(text, regexp)
 	Assert(t, result, "Matching string cat with (cat|dog)")
 
 	regexp.Reset()
-	text = NewIterator("dog")
+	text = NewByteIterator("dog")
 	result, _ = Match(text, regexp)
 	Assert(t, result, "Matching string dog with (cat|dog)")
+}
 
+func TestCaptureGroup(t *testing.T) {
+	regexp := NewByteIterator(`(\w+) and dog (\d*)`)
+	text := NewByteIterator("cat and dog 123")
+
+	result, _ := Match(text, regexp)
+	Assert(t, result, "Matching string '(\\w+) and dog' with cat and dog 123")
 }

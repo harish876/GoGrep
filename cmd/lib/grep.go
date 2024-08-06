@@ -31,34 +31,48 @@ func MatchHere(text *ByteIterator, regexp *ByteIterator) bool {
 		return MatchDigit(text, regexp)
 	} else if text.HasNext() && (regexp.Peek() == 0x5c && regexp.Peek(1) == 'w') {
 		return MatchAlphaNumeric(text, regexp)
-	} else if text.HasNext() && (regexp.Peek() == '[' && regexp.Peek(1) != '^') {
+	} else if text.HasNext() && (regexp.Peek() == '[' && regexp.Peek(1) != '^' && regexp.Find(']')) {
 		return MatchPositiveGroup(text, regexp.Next())
-	} else if text.HasNext() && (regexp.Peek() == '[' && regexp.Peek(1) == '^') {
+	} else if text.HasNext() && (regexp.Peek() == '[' && regexp.Peek(1) == '^' && regexp.Find(']')) {
 		return MatchNegativeGroup(text, regexp.Next())
-	} else if text.HasNext() && (regexp.Peek() == '(') {
-		return MatchOr(text, regexp.Next())
+	} else if text.HasNext() && (regexp.Peek() == '(' && regexp.Find(')')) {
+		return MatchCaptureGroup(text, regexp.Next())
 	}
 	return false
 }
 
+func MatchCaptureGroup(text *ByteIterator, regexp *ByteIterator) bool {
+	if regexp.Find('|') {
+		return MatchOr(text, regexp)
+	} else {
+		var acc []byte
+		for regexp.Peek() == ')' {
+			acc = append(acc, regexp.Peek())
+			regexp.Next()
+		}
+		captureRegex := NewByteIterator(acc)
+		return MatchHere(text, captureRegex)
+	}
+}
+
 func MatchOr(text *ByteIterator, regexp *ByteIterator) bool {
-	var leftRegexp string
-	var rightRegexp string
+	var leftRegexp *ByteIterator
+	var rightRegexp *ByteIterator
 	var acc []byte
 	for regexp.Peek() != ')' {
 		if regexp.Peek() == '|' {
-			leftRegexp = string(acc)
+			leftRegexp = NewByteIterator(acc)
 			acc = make([]byte, 0)
 		} else {
 			acc = append(acc, regexp.Peek())
 		}
 		regexp.Next()
 	}
-	rightRegexp = string(acc)
+	rightRegexp = NewByteIterator(acc)
 	text.Reset()
-	leftMatch, _ := Match(text, NewIterator(leftRegexp))
+	leftMatch, _ := Match(text, leftRegexp)
 	text.Reset()
-	rightMatch, _ := Match(text, NewIterator(rightRegexp))
+	rightMatch, _ := Match(text, rightRegexp)
 	return leftMatch || rightMatch
 }
 
