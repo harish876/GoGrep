@@ -1,11 +1,11 @@
 package lib
 
-func Match(text *ByteIterator, regexp *ByteIterator) (bool, error) {
+func Match(text *ByteIterator, regexp *ByteIterator, gs *GrepState) (bool, error) {
 	if regexp.Get(0) == '^' {
-		return MatchHere(text, regexp.Next()), nil
+		return MatchHere(text, regexp.Next(), gs), nil
 	}
 	for {
-		if MatchHere(text, regexp) {
+		if MatchHere(text, regexp, gs) {
 			return true, nil
 		}
 		if !text.Next().HasNext() {
@@ -14,52 +14,75 @@ func Match(text *ByteIterator, regexp *ByteIterator) (bool, error) {
 	}
 }
 
-func MatchHere(text *ByteIterator, regexp *ByteIterator) bool {
+func MatchHere(text *ByteIterator, regexp *ByteIterator, gs *GrepState) bool {
 	if !regexp.HasNext() {
 		return true
-	} else if regexp.Peek(1) == '*' {
-		return MatchStar(regexp.Peek(), text, regexp.Advance(2))
-	} else if regexp.Peek(1) == '+' {
-		return MatchPlus(regexp.Peek(), text, regexp.Advance(2))
+	} else if text.HasNext() && (regexp.Peek() == '(' && regexp.Find(')')) {
+		AddCaptureGroup(text, regexp.Next(), gs)
+		return MatchCaptureGroup(text, regexp.Next(), gs) && regexp.Peek() == BUF_OUT_OF_RANGE
+	} else if regexp.Peek() == '*' {
+		return MatchStar(regexp.Peek(-1), text, regexp.Advance(1), gs)
+	} else if regexp.Peek() == '+' {
+		return MatchPlus(regexp.Peek(-1), text, regexp.Advance(1), gs)
 	} else if regexp.Peek(1) == '?' {
-		return MatchQuestion(regexp.Peek(), text, regexp.Advance(2))
+		return MatchQuestion(regexp.Peek(), text, regexp.Advance(1), gs)
 	} else if regexp.Peek() == '$' {
 		return !text.HasNext()
 	} else if text.HasNext() && (regexp.Peek() == '.' || regexp.Peek() == text.Peek()) {
-		return MatchHere(text.Next(), regexp.Next())
+		return MatchHere(text.Next(), regexp.Next(), gs)
 	} else if text.HasNext() && (regexp.Peek() == 0x5c && regexp.Peek(1) == 'd') {
-		return MatchDigit(text, regexp)
+		return MatchDigit(text, regexp, gs)
 	} else if text.HasNext() && (regexp.Peek() == 0x5c && regexp.Peek(1) == 'w') {
-		return MatchAlphaNumeric(text, regexp)
+		return MatchAlphaNumeric(text, regexp, gs)
+	} else if text.HasNext() && (regexp.Peek() == 0x5c && IsDigit(regexp.Peek(1)) && gs.Captures.Len() >= 1) {
+		capture := gs.Captures.Top()
+		//gs.Captures.Pop()
+		result := MatchHere(text, capture, gs)
+		return result
 	} else if text.HasNext() && (regexp.Peek() == '[' && regexp.Peek(1) != '^' && regexp.Find(']')) {
 		return MatchPositiveGroup(text, regexp.Next())
 	} else if text.HasNext() && (regexp.Peek() == '[' && regexp.Peek(1) == '^' && regexp.Find(']')) {
 		return MatchNegativeGroup(text, regexp.Next())
-	} else if text.HasNext() && (regexp.Peek() == '(' && regexp.Find(')')) {
-		return MatchCaptureGroup(text, regexp.Next())
 	}
 	return false
 }
 
-func MatchCaptureGroup(text *ByteIterator, regexp *ByteIterator) bool {
-	if regexp.Find('|') {
-		return MatchOr(text, regexp)
+func AddCaptureGroup(text *ByteIterator, regexp *ByteIterator, gs *GrepState) {
+	var acc []byte
+	for regexp.Peek() != ')' {
+		acc = append(acc, regexp.Peek())
+		regexp.Next()
+	}
+	gs.Captures.Push(NewByteIterator(acc))
+}
+
+func MatchCaptureGroup(text *ByteIterator, regexp *ByteIterator, gs *GrepState) bool {
+	if gs.Captures.Len() == 0 {
+		return false
+	}
+
+	capture := gs.Captures.Top()
+	//gs.Captures.Pop()
+
+	if capture.Find('|') {
+		return MatchOr(text, capture, gs) // MatchOr should pop the game state
 	} else {
 		var acc []byte
-		for regexp.Peek() == ')' {
-			acc = append(acc, regexp.Peek())
-			regexp.Next()
+		for capture.Peek() == ')' {
+			acc = append(acc, capture.Peek())
+			capture.Next()
 		}
 		captureRegex := NewByteIterator(acc)
-		return MatchHere(text, captureRegex)
+		return MatchHere(text, captureRegex, gs)
 	}
 }
 
-func MatchOr(text *ByteIterator, regexp *ByteIterator) bool {
+func MatchOr(text *ByteIterator, regexp *ByteIterator, gs *GrepState) bool {
 	var leftRegexp *ByteIterator
 	var rightRegexp *ByteIterator
 	var acc []byte
-	for regexp.Peek() != ')' {
+
+	for regexp.HasNext() {
 		if regexp.Peek() == '|' {
 			leftRegexp = NewByteIterator(acc)
 			acc = make([]byte, 0)
@@ -69,15 +92,15 @@ func MatchOr(text *ByteIterator, regexp *ByteIterator) bool {
 		regexp.Next()
 	}
 	rightRegexp = NewByteIterator(acc)
+
+	leftMatch, _ := Match(text, leftRegexp, gs)
 	text.Reset()
-	leftMatch, _ := Match(text, leftRegexp)
-	text.Reset()
-	rightMatch, _ := Match(text, rightRegexp)
+	rightMatch, _ := Match(text, rightRegexp, gs)
 	return leftMatch || rightMatch
 }
 
-func MatchQuestion(char byte, text *ByteIterator, regexp *ByteIterator) bool {
-	if MatchHere(text, regexp) {
+func MatchQuestion(char byte, text *ByteIterator, regexp *ByteIterator, gs *GrepState) bool {
+	if MatchHere(text, regexp, gs) {
 		return true
 	}
 	if text.HasNext() || (text.Peek() != '.' && text.Peek() != char) {
@@ -116,24 +139,24 @@ func MatchNegativeGroup(text *ByteIterator, regexp *ByteIterator) bool {
 	return true
 }
 
-func MatchAlphaNumeric(text *ByteIterator, regexp *ByteIterator) bool {
+func MatchAlphaNumeric(text *ByteIterator, regexp *ByteIterator, gs *GrepState) bool {
 	if text.HasNext() && IsDigit(text.Peek()) || IsAlpha(text.Peek()) {
 		regexp.Advance(2)
 	}
-	return MatchHere(text.Next(), regexp)
+	return MatchHere(text.Next(), regexp, gs)
 }
 
-func MatchDigit(text *ByteIterator, regexp *ByteIterator) bool {
+func MatchDigit(text *ByteIterator, regexp *ByteIterator, gs *GrepState) bool {
 	if text.HasNext() && IsDigit(text.Peek()) {
 		regexp.Advance(2)
 	}
 
-	return MatchHere(text.Next(), regexp)
+	return MatchHere(text.Next(), regexp, gs)
 }
 
-func MatchStar(char byte, text *ByteIterator, regexp *ByteIterator) bool {
+func MatchStar(char byte, text *ByteIterator, regexp *ByteIterator, gs *GrepState) bool {
 	for {
-		if MatchHere(text, regexp) {
+		if MatchHere(text, regexp, gs) {
 			return true
 		}
 
@@ -144,13 +167,13 @@ func MatchStar(char byte, text *ByteIterator, regexp *ByteIterator) bool {
 	}
 }
 
-func MatchPlus(char byte, text *ByteIterator, regexp *ByteIterator) bool {
+func MatchPlus(char byte, text *ByteIterator, regexp *ByteIterator, gs *GrepState) bool {
 	for {
 		if !text.HasNext() || (text.Peek() != '.' && text.Peek() != char) {
 			return false
 		}
 		text.Next()
-		if MatchHere(text, regexp) {
+		if MatchHere(text, regexp, gs) {
 			return true
 		}
 	}
