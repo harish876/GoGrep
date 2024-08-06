@@ -30,8 +30,9 @@ func main() {
 
 	text := lib.NewByteIterator(line)
 	regexp := lib.NewByteIterator(pattern)
+	gs := lib.NewGrepState()
 
-	ok, err := lib.Match(text, regexp)
+	ok, err := lib.Match(text, regexp, gs)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(2)
